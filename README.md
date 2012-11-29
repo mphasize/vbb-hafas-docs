@@ -11,15 +11,13 @@ Die ersten Beispiele werden wir ganz pragmatisch in einem Frage-Antwort Format b
 
 * http://appsandthecity.net/daten/
 * http://stefanwehrmeyer.com/projects/vbbxsd/
-
+* http://www.administrator.de/wissen/HAFAS-Fahrplanauskunft-API-Sammlung-177145.html
 
 ## Weitere Datenquellen
 
-* http://www.administrator.de/wissen/HAFAS-Fahrplanauskunft-API-Sammlung-177145.html
-
-
 ### CartoDB
 
+**Datensatz von 2011! Noch nicht der aktuelle Datensatz!**  
 Die georefenzierten Daten aus dem VBB-GTFS Datensatz in CartoDB eingeladen. (CartoDB selbst aktualisiert leider gerade die Server, in sofern Verfügbarkeit schwierig.)
 
 https://maps-fhp.cartodb.com/tables/vbb_stops/embed_map
