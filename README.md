@@ -9,10 +9,14 @@ Die ersten Beispiele werden wir ganz pragmatisch in einem Frage-Antwort Format b
 
 ## Informationsquellen
 
-http://appsandthecity.net/daten/
-http://stefanwehrmeyer.com/projects/vbbxsd/
+* http://appsandthecity.net/daten/
+* http://stefanwehrmeyer.com/projects/vbbxsd/
+
 
 ## Weitere Datenquellen
+
+* http://www.administrator.de/wissen/HAFAS-Fahrplanauskunft-API-Sammlung-177145.html
+
 
 ### CartoDB
 
