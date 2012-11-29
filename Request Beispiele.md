@@ -33,6 +33,7 @@ Mit dem Location-Validation-Request kann man für einen beliebigen Suchstring ei
 ## Connection Request
 
 Mit dem Connection-Request kann man eine Verbindungssuche starten.
+Beispiel #1: Vorher wurden über den Location-Validation-Request zwei Stations-IDs bestimmt, die jetzt hier im ConReq verwendet werden um den Start- und den Endpunkt zu bestimmten.
 
 	<?xml version="1.0" encoding="iso-8859-1"?>
 		<ReqC ver="1.1" prod="String" rt="yes" lang="DE" accessId="'. XML_ACCESS_ID .'">
@@ -48,4 +49,24 @@ Mit dem Connection-Request kann man eine Verbindungssuche starten.
 				<RFlags b="1" f="5" chExtension="0" sMode="N" nrChanges="2" getPrice="1" />
 			</ConReq>
 		</ReqC>
+	</xml>
+
+Beispiel #2: Statt festen Stationen, können z.B. auch Geo-Koordination im Latitude-Longitude-Format für einen Request verwendet werden.
+Da das HAFAS System die Koordination als Integer (also Ganzzahlen) erwartet, muss man die klassischen Koordinaten mit dem Faktor 1.000.000 multiplizieren.
+
+
+	<?xml version="1.0" encoding="iso-8859-1"?>
+		<ReqC ver="1.1" prod="String" rt="no" lang="DE" accessId="'. XML_ACCESS_ID .'">
+			<ConReq deliverPolyline="0">
+				<Start>
+					<Coord x="Longitude(*1000000)" y="Latitude(*1000000)" type="WGS84" />
+					<Prod prod="1111111111111111" bike="0" couchette="0" direct="0" sleeper="0" />
+				</Start>
+				<Dest>						
+					<Coord x="Longitude(*1000000)" y="Latitude(*1000000)" type="WGS84" />
+				</Dest>
+				<ReqT a="0"  time="19:47" date="20121126" />
+				<RFlags b="1" f="5" chExtension="0" sMode="N" nrChanges="2" getPrice="1" />
+			</ConReq>
+		</ReqC>	
 	</xml>
