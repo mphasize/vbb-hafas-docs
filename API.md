@@ -123,6 +123,16 @@ sollte, da die im System liegenden Namen oder IDs nicht dauerhaft garantiert
 sind.
 
 
+  <LocValReq id="001" maxNr="20" sMode="1"> 
+    <ReqLoc type="ST" match="Hauptbahnhof, Berlin" /> 
+  </LocValReq> 
+  
+  <LocValRes flag="FINAL" id="001"> 
+    <Station name="Berlin Hbf" externalId="008011160#81" externalStationNr="008011160" type="WGS84" x="13369548" y="52525589"/> 
+    [...] 
+  </LocValRes> 
+
+
 ## STBReq - Station Board Request
 
 Ein Station Board Request liefert Abfahrts- bzw. Ankunftstafeln für eine
@@ -130,11 +140,33 @@ angegebene Station bzw. Stationsbezeichnung.
 
 ### Station Board Request Parameter:
 
-- Zeitpunkt, entweder:
-  - Time, Period oder Today
-  - Now: 
-  - Timetable: 
-- TableStation
+- Zeitpunkt, entweder 1., 2. oder 3.:
+  1. Sequenz aus:
+    - Time: The format of the Time element is [xxd]hh:mm:ss. xx represents a day
+      offset. All offsets are relative to the base date of the connection. For
+      example a time 01d12:30:00 means 12:30 at the first day following the day
+      specified as the base date in the Date element in the Overview section of
+      the connection.
+    - Period oder Today
+
+      Period: A period is requested. If DateBegin and DateEnd are ommitted, a
+      table for the whole timetableperiod is generated. If DateBegin is ommitted,
+      the current date is taken as the begin of the period. If DateEnd is
+      ommitted, the end of the timetable period is taken as the end of the
+      requested period.
+      - DateBegin: 
+      - DateEnd:
+        
+      Today: Stationboardrequest for the current day.
+  
+  2. Now: The element Now stands for current time and current date
+  
+  3. Timetable: The element Timetable stands for the timetable period beginning from now.
+	
+- TableStation: The requested Station. This element must be filled with the
+  results from a previously performed location validation request. Only stations
+  are allowed as input here.
+
 - DirectionFilter (optional)
 - TrainFilter (optional)
 - ProductFilter (optional)
