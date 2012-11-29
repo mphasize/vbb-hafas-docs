@@ -29,3 +29,23 @@ Mit dem Location-Validation-Request kann man für einen beliebigen Suchstring ei
 			</LocValReq>
 		</ReqC>
 	</xml>
+
+## Connection Request
+
+Mit dem Connection-Request kann man eine Verbindungssuche starten.
+
+	<?xml version="1.0" encoding="iso-8859-1"?>
+		<ReqC ver="1.1" prod="String" rt="yes" lang="DE" accessId="'. XML_ACCESS_ID .'">
+			<ConReq deliverPolyline="1">
+				<Start>
+					<Station externalId="009230999#86" />
+					<Prod prod="1111111111111111" bike="0" couchette="0" direct="0" sleeper="0" />
+				</Start>
+				<Dest>						
+					<Station externalId="009024101#86" />
+				</Dest>
+				<ReqT a="0"  time="19:47" date="20121126" />
+				<RFlags b="1" f="5" chExtension="0" sMode="N" nrChanges="2" getPrice="1" />
+			</ConReq>
+		</ReqC>
+	</xml>
