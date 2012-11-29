@@ -32,11 +32,4 @@ Tiles API:
     http://maps-fhp.cartodb.com/tiles/vbb_shapes/{z}/{x}/{y}.png
 
 
-Zwei XSD Beschreibungen
-einmal VBB-std einmal VBB-se
-http://demo.hafas.de/xml/vbb/std/hafasXMLInterface.xsd
---> enthält Stationboard-Request (funktioniert auch)
-http://demo.hafas.de/xml/vbb/se/hafasXMLInterface.xsd
-
-
 
