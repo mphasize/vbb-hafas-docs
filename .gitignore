@@ -1,4 +1,9 @@
+# Ignore hidden files
+.*
 *.pyc
 *~
 *.sublime-project
 *.sublime-workspace
+
+# Ignore Netbeans Projects
+nbproject/

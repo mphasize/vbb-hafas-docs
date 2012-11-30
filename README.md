@@ -13,6 +13,12 @@ Die ersten Beispiele werden wir ganz pragmatisch in einem Frage-Antwort Format b
 * http://stefanwehrmeyer.com/projects/vbbxsd/
 * http://www.administrator.de/wissen/HAFAS-Fahrplanauskunft-API-Sammlung-177145.html
 
+## Implementierungen
+
+Die Hafas-Schnittstelle ist im [Public Transport Enabler](http://code.google.com/p/public-transport-enabler/) implementiert.
+
+Speziell Methode queryConnectionsXml() in [AbstractHafasProvider.java](http://code.google.com/p/public-transport-enabler/source/browse/enabler/src/de/schildbach/pte/AbstractHafasProvider.java) ist dabei interessant.
+
 ## Weitere Datenquellen
 
 ### CartoDB

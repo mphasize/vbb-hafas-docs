@@ -67,3 +67,4 @@ Da das HAFAS System die Koordination als Integer (also Ganzzahlen) erwartet, mus
 			<RFlags b="1" f="5" chExtension="0" sMode="N" nrChanges="2" getPrice="1" />
 		</ConReq>
 	</ReqC>	
+
