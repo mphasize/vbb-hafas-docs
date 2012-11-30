@@ -1,0 +1,1686 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- edited with XMLSpy v2005 rel. 3 U (http://www.altova.com) by rhu@hacon.de (HaCon Ingenieurges. mbH) -->
+<!-- ======================================================================= -->
+<!-- location validation request/result -->
+<!-- connection request/result -->
+<!-- connection scroll request/result -->
+<!-- -->
+<!-- Version history:  ver. 1.0  initial version  -  Sascha Heinze 26.04.05 -->
+<!--                             ver. 1.1 added annotations - Sascha Heinze, 17.05.05 -->
+<!--                             ver. 1.2 added attribute output to the element ReqLoc -->
+<!--                             ver. 1.3 polylines added for special versions  -->
+<!--                             ver. 1.4 rhu:07.02.2011: Elements ConSectionList and StopPrognosis added -->
+<!--                             ver. 1.5 rhu:18.09.2012: ReqC: rt, ld; ReqC->ConReq->RFlags->getPrice    -->
+<!--                                                      ResC->ConRes->PricingResult                     -->
+<!--                                                      ResC->ConRes->ConnectionList->Connection->AltConList -->
+<!--                                                      ResC->ConRes->ConnectionList->Connection->RTStateList -->
+<!--                                                      STBRes->JourneyList->STBJourney: journeyId, trainId added -->
+<!--                                                      STBRes->JourneyList->STBJourney->JProg added -->
+<!-- ======================================================================= -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+	<xs:element name="ReqC">
+		<xs:annotation>
+			<xs:documentation>The element ReqC is the root element for requests to  the HAFAS system. It must contain either a location vlidation request, a  connection request or a connection scroll request. (See the corresponding elements for more details).</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:choice>
+				<xs:element ref="STBReq"/>
+				<xs:element ref="ConReq"/>
+				<xs:element ref="ConScrReq"/>
+			</xs:choice>
+			<xs:attributeGroup ref="attlist.ReqC"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.ResC">
+		<xs:attribute name="ver" type="xs:string" use="required" fixed="1.1">
+			<xs:annotation>
+				<xs:documentation>Current version of the Interface. The version given in the result must match the version specified in the request.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="prod" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>Free form string identifying the application that produced the xml.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="rt" default="yes">
+			<xs:annotation>
+				<xs:documentation>Realtime flag. Default: yes, switch to no, if realtime is not wanted. Does not have an effect on LocVal requests.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="yes"/>
+					<xs:enumeration value="no"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="lang" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>Specifies the language for the request. Possible values depend on the languages contained in the actual Hafas system. Almost all versions will contain german (DE) and english (EN). The language format is defined in ISO 639-1</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="host" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>Specifies the responsing host either as IP adress or  local description of the host</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="ld" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>ld is the redirector parameter, which can be for example used for load balancing purposes.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:attributeGroup name="attlist.ReqC">
+		<xs:attribute name="accessId" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>The id may contain any string for identification of the user</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attributeGroup ref="attlist.ResC"/>
+	</xs:attributeGroup>
+	<xs:element name="Err">
+		<xs:annotation>
+			<xs:documentation>If an error occurs, the element Err indicates the type of the error and a descriptive text. This text is meant to be used for logging purposes or other internal use. Normally this message should not be presented to the user.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:attributeGroup ref="attlist.Err"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.Err">
+		<xs:attribute name="code" type="xs:token" use="required">
+			<xs:annotation>
+				<xs:documentation>The attribute code contains an identifier for the current error. This code is meant to be used by the application. A list containing possible errorcodes will be available in a separate document.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="text" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>The attribute text specifies a human readable description of the current error.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="level" default="E">
+			<xs:annotation>
+				<xs:documentation>The attribute level specifies the importance of the current error. Valid values are M for messages, W for warnings, E for errors and F for fatal errors.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="M"/>
+					<xs:enumeration value="W"/>
+					<xs:enumeration value="E"/>
+					<xs:enumeration value="F"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:complexType name="ConBasicReq">
+		<xs:sequence>
+			<xs:element ref="Start"/>
+			<xs:element ref="Dest"/>
+			<xs:element ref="Via" minOccurs="0" maxOccurs="3"/>
+		</xs:sequence>
+		<xs:attributeGroup ref="attlist.ConBasicReq"/>
+	</xs:complexType>
+	<xs:attributeGroup name="attlist.ConBasicReq">
+		<xs:attribute name="ivCons" use="optional" default="no">
+			<xs:annotation>
+				<xs:documentation>The attribute ivCons defines, whether iv connections shall be calculated, or not.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="yes"/>
+					<xs:enumeration value="no"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="oevCons" use="optional" default="yes">
+			<xs:annotation>
+				<xs:documentation>The attribute oevCons defines, whether oev connections shall be calculated, or not.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="yes"/>
+					<xs:enumeration value="no"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="ConReq">
+		<xs:annotation>
+			<xs:documentation>The element ConReq specifies an initial connection request (opposed to the element ConScrReq, that specifies a subsequent scroll request based on this initial request).</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:extension base="ConBasicReq">
+					<xs:sequence>
+						<xs:element ref="ReqT"/>
+                				<xs:element ref="RFlags"/>
+                				<xs:element ref="GISParameters" minOccurs="0"/>
+					</xs:sequence>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="GISParameters">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Front" minOccurs="0"/>
+				<xs:element ref="Back" minOccurs="0"/>
+                                <xs:element ref="Total" minOccurs="0"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Front">
+		<xs:annotation>
+			<xs:documentation>The means of transport choosen in the front section are used to travel from the starting point to the first station of a journey.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence minOccurs="0">
+				<xs:element ref="IndividualTransport" maxOccurs="5"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Back">
+		<xs:annotation>
+			<xs:documentation>The means of transport choosen in the Back section are considered when travelling from the last station to the destination address.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence minOccurs="0">
+				<xs:element ref="IndividualTransport" maxOccurs="5"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="IndividualTransport">
+		<xs:complexType>
+			<xs:attributeGroup ref="IndividualTransportParameters"/>
+		</xs:complexType>
+	</xs:element>
+        <xs:element name="Total">
+		<xs:annotation>
+			<xs:documentation>The means of transport choosen in th total section are used for IV connections covering the whole route.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="IndividualTransport" maxOccurs="5"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="IndividualTransportParameters">
+		<xs:attribute name="type" use="optional">
+			<xs:annotation>
+				<xs:documentation>The attribute type specifies the type of individual transport to use for pre/post trip. Possible values are FOOT, BIKE, TAXI, PARKANDRIDE (only stations with P+R parking areas are searched, currently not used) , CAR</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="FOOT"/>
+					<xs:enumeration value="BIKE"/>
+					<xs:enumeration value="TAXI"/>
+					<xs:enumeration value="PARKANDRIDE"/>
+					<xs:enumeration value="CAR"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="minDist" use="required">
+			<xs:annotation>
+				<xs:documentation>The minimum distance in meters. For different means of transport, different minimum distances can be set. For foot this should usually be set to 0, for cars a higher distance should be used</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:int">
+					<xs:minInclusive value="0"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="maxDist" use="required">
+			<xs:annotation>
+				<xs:documentation>The maximum distance in meters. With minDist and maxDist, you can specify a range, valid for the current means of transportation, so for foot a range of 0 to 2000 meters could be set, for bike a range of 1000 to 5000 and for car/taxi a range of 3000-10000. According to the distance between the starting point and the stations found, the appropriate means of transport will be chosen. </xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:int">
+					<xs:minInclusive value="0"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+                <xs:attribute name="maxTime" use="optional">
+			<xs:annotation>
+				<xs:documentation> The maximum duration for routing in meters. (currently not used)   </xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:int">
+					<xs:minInclusive value="0"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="cost" use="optional">
+			<xs:annotation>
+				<xs:documentation>Cost per kilometer in EURO cents.(currently not used)</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:int">
+					<xs:minInclusive value="0"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="speed" use="optional">
+			<xs:annotation>
+				<xs:documentation>Speed in km/h (currently not used)</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:int">
+					<xs:minInclusive value="0"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="ConScrReq">
+		<xs:annotation>
+			<xs:documentation>ConScrReq specifies a connection scroll request based on a previously performed ConReq. It takes a ConResCtxt supplied by the ConRes (as the answer to this previously performed ConReq)</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="ConResCtxt"/>
+			</xs:sequence>
+			<xs:attributeGroup ref="attlist.ConScrReq"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.ConScrReq">
+		<xs:attribute name="scrDir" use="optional" default="F">
+			<xs:annotation>
+				<xs:documentation>The attribute scrDir specifies the scroll direction relative to the previously received ConRes. A value of B will retrieve the connections preceeding the connections of this ConRes. A value of F will retrieve the connection following the connections in this ConRes. A value of I will retrieve the same connections once again. The option I is for future use and will not work in this version of the interface. If supplied, an error message will be  returned.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="B"/>
+					<xs:enumeration value="F"/>
+					<xs:enumeration value="I"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="nrCons" type="xs:int" use="optional" default="3">
+			<xs:annotation>
+				<xs:documentation>nrCons specifies the number of connections to be returned in the ConRes containing the answer of the current ConScrReq. Please keep in mind that there can be returned fewer connections (in which case the result will contain an Err element specifying the reason for this behaviour). In some cases the Hafas algorithm will calculate more tan the requested number of connections. This is due to te fact, that the HAFAS algorithm apart from returning the best connections additionally calculates more comfortable connections, which will be returned as well. This is a basic feature of the Hafas algorithm.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="Start" type="StartViaType">
+		<xs:annotation>
+			<xs:documentation>The element Start contains the Startlocation for  the current connection request. This might either be a Station, Adress or Poi, as returned by a previously obtained location validation result (LocValRes), or a userspecified coordinate (Coord) which does not require a location validation.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="Via" type="ViaType">
+		<xs:annotation>
+			<xs:documentation>The Via element specifies a Station that has to be passed during the journey. There can be specified up o three Via elements in the request.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="Dest" type="RequestLocationType">
+		<xs:annotation>
+			<xs:documentation>The element Dest specifies the destination of the  journey. As in the Start element there can be supplied Station, and Coord elements.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:complexType name="ViaType">
+		<xs:sequence>
+			<xs:element ref="Station"/>
+			<xs:element ref="Prod"/>
+		</xs:sequence>
+		<xs:attributeGroup ref="attlist.RequestLocationRef"/>
+	</xs:complexType>
+	<xs:complexType name="StartViaType">
+		<xs:complexContent>
+			<xs:extension base="RequestLocationType">
+				<xs:sequence>
+					<xs:element ref="Prod"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="RequestLocationType">
+		<xs:choice>
+			<xs:element ref="Address"/>
+			<xs:element ref="Poi"/>
+			<xs:element ref="Station"/>
+			<xs:element ref="Coord"/>
+		</xs:choice>
+		<xs:attributeGroup ref="attlist.RequestLocationRef"/>
+	</xs:complexType>
+	<xs:attributeGroup name="attlist.RequestLocationRef">
+		<xs:attribute name="min" type="xs:int" use="optional">
+			<xs:annotation>
+				<xs:documentation>The attribute min is given in minutes. For the Start and the Dest, min specifies pre- and post trip times (for example a walk time to the specified location). For the element Via, min specifies the change time (the amount of time a passenger wants to stay at the specified via, before continuing the travel). There is a maximum of 48 hours (2880 minutes) that the change time must not exceed.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="Prod">
+		<xs:annotation>
+			<xs:documentation>The element Prod contains the product choice and related things. The element prod is placed within the Start ans the Via elements. The product choice defined in Prod is valid for the section of the Journey, that starts at the current location and ends at the next Via or Dest element.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:attributeGroup ref="attlist.Prod"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.Prod">
+		<xs:attribute name="prod">
+			<xs:annotation>
+				<xs:documentation>The attribute prod contains a product filter. Each means of transportation belongs to a product category. The product category of a means of transport is dependent on the data used with the current Hafas system. The concrete definements are placed in the file zugart of the Hafas raw data. There is a maximum of 16 product categories (0 - 15) in the Hafas system. The element prod contains a bitfield for these product categories. The first byte represents category 0, the second category 1, and so on. A 1 means that the category is selected for the search, a 0 means deselected. For example prod="1111000000000000" selects the categories 0 to 3 and deselects all other categories.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:pattern value="[01]{16}"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="direct" use="optional" default="0">
+			<xs:annotation>
+				<xs:documentation>Valid values are 0 and 1. if direct is set to 1,  this means, that on the current section of the journey only direct connections are allowed. A value of 0 allows changes in this section.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="0"/>
+					<xs:enumeration value="1"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="sleeper" use="optional" default="0">
+			<xs:annotation>
+				<xs:documentation>If set to 1, on this section only night trains  containing beds are allowed. In this case, the direct flag will be set to one implicitly. The default is 0 to allow for searches of all sorts of trains.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="0"/>
+					<xs:enumeration value="1"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="couchette" use="optional" default="0">
+			<xs:annotation>
+				<xs:documentation>If set to 1, in this section only night trains containing couchettes are allowed. In this case the direct flag is set to 1 implicitly. The default is 0 to allow searches for all sorts of trains.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="0"/>
+					<xs:enumeration value="1"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="bike" use="optional" default="0">
+			<xs:annotation>
+				<xs:documentation>If set o 1, only trains allowing the transport of bicycles are allowed in this section. The default is 0 to allow searches for all sorts of trains.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="0"/>
+					<xs:enumeration value="1"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="ReqT" type="ReqTType">
+		<xs:annotation>
+			<xs:documentation>ReqT contains the request time for the current request.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:complexType name="ReqTType">
+		<xs:annotation>
+			<xs:documentation>ReqTType contains the request time for the current
+				request.</xs:documentation>
+		</xs:annotation>
+		<xs:attributeGroup ref="attlist.ReqT"/>
+	</xs:complexType>
+	<xs:attributeGroup name="attlist.ReqT">
+		<xs:attribute name="time" use="required">
+			<xs:annotation>
+				<xs:documentation>The attribute time contains the request time. The format is: hh:mm</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:pattern value="[0-9][0-9][:][0-9][0-9]"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="date" use="required">
+			<xs:annotation>
+				<xs:documentation>The attribute date contains the request date. The format is: yyyymmdd</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:pattern value="[2][0-9][0-9][0-9][0-1][0-9][0-3][0-9]"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="a" use="optional" default="0">
+			<xs:annotation>
+				<xs:documentation>The attribute a specifies the current request time to be an arrival time (if set to 1) or a departure time (if set to 0). Default is 0.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="0"/>
+					<xs:enumeration value="1"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="RFlags">
+		<xs:annotation>
+			<xs:documentation>RFlags specifies some essential request flags passed to the Hafas kernel.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:attribute name="b" use="required">
+				<xs:annotation>
+					<xs:documentation>The attribute b specifies the number of
+						connections to find in searchdirection backward. This
+						means connections starting/ending (depends on the value
+						of the attribute a) before the time specified in ReqT.
+						The number must not be below zero and must not exceed
+						6.</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:int">
+						<xs:minInclusive value="0"/>
+						<xs:maxInclusive value="6"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+			<xs:attribute name="f" use="required">
+				<xs:annotation>
+					<xs:documentation>The attribute f specifies the number of
+						connections to find in searchdirection forward. This
+						means connections starting/ending (depends on the value
+						of the attribute a) after the time specified in ReqT.
+						The number must not be below zero and must not exceed
+						6.</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:int">
+						<xs:minInclusive value="0"/>
+						<xs:maxInclusive value="6"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+			<xs:attributeGroup ref="attlist.BasicRFlags"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.BasicRFlags">
+		<xs:attribute name="nrChanges">
+			<xs:annotation>
+				<xs:documentation>Number of changes. If this optional attribute is given, it restricts the number of changes for the current request. Possible values are from 0 (only direct connections) to 6. If the attribute is not given, the number of changes is not restricted.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:int">
+					<xs:minInclusive value="0"/>
+					<xs:maxInclusive value="6"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="chExtension" use="optional" default="0">
+			<xs:annotation>
+				<xs:documentation>The attribute chExtension offers a percentual extension of the changetime. Valid values are from 0 (no extension) to 400 (changeTime*5). It is not possible to decrease change times.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:int">
+					<xs:minInclusive value="0"/>
+					<xs:maxInclusive value="400"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+                <xs:attribute name="getPrice" use="optional" default="0">
+			<xs:annotation>
+				<xs:documentation>The getPrice is a switch, which defines whether the fare calculation should be executed or not.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="0"/>
+					<xs:enumeration value="1"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="sMode" use="optional" default="N">
+			<xs:annotation>
+				<xs:documentation>The attribute sMode specifies a search mode. Valid values are N for normal search and P for economic search. The default is N.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="N"/>
+					<xs:enumeration value="P"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="ResC">
+		<xs:annotation>
+			<xs:documentation>ResC is the container for any type of results, calculated by the Hafas server.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Err" minOccurs="0" maxOccurs="unbounded"/>
+				<xs:choice>
+					<xs:element ref="ConRes"/>
+					<xs:element ref="STBRes"/>
+				</xs:choice>
+			</xs:sequence>
+			<xs:attributeGroup ref="attlist.ResC"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="ConRes">
+		<xs:annotation>
+			<xs:documentation>A ConRes is the connection result. This Type of result is returned as a resonse to a connection request (ConReq) or a connection scroll request (ConScrReq).</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Err" minOccurs="0" maxOccurs="unbounded"/>
+				<xs:element ref="ConResCtxt" minOccurs="0"/>
+				<xs:element ref="ConnectionList" minOccurs="0" maxOccurs="2"/>
+				<xs:element ref="PricingResult" minOccurs="0"/>
+			</xs:sequence>
+			<xs:attributeGroup ref="attlist.ConRes"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.ConRes">
+		<xs:attribute name="dir" use="required">
+			<xs:annotation>
+				<xs:documentation>dir represents the direction that the result represents. O means outward connections, R means retuen connections. Currently only outward connections are calculated, so this value will be set to O.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="O"/>
+					<xs:enumeration value="R"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="Now">
+		<xs:annotation>
+			<xs:documentation>The element Now stands for current time and current date</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+        <xs:element name="Timetable">
+	        <xs:annotation>
+		       <xs:documentation>The element Timetable stands for the timetable period beginning from now.</xs:documentation>
+        </xs:annotation>
+	</xs:element>
+	<xs:element name="STBReq">
+		<xs:annotation>
+			<xs:documentation>StationBoardRequest</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:choice>
+					<xs:sequence>
+						<xs:element ref="Time"/>
+						<xs:choice>
+							<xs:element ref="Period"/>
+							<xs:element ref="Today"/>
+						</xs:choice>
+					</xs:sequence>
+					<xs:element ref="Now"/>
+                                        <xs:element ref="Timetable"/>
+				</xs:choice>
+				<xs:element ref="TableStation"/>
+				<xs:element ref="DirectionFilter" minOccurs="0"/>
+				<xs:element ref="TrainFilter" minOccurs="0"/>
+				<xs:element ref="ProductFilter" minOccurs="0"/>
+			</xs:sequence>
+			<xs:attribute name="boardType" use="required">
+				<xs:annotation>
+					<xs:documentation>Type of StationBoard: ARR -> Arrivalboard, DEP -> DepartureBoard</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:token">
+						<xs:enumeration value="ARR"/>
+						<xs:enumeration value="DEP"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+			<xs:attribute name="maxStops" use="optional" type="xs:int">
+				<xs:annotation>
+					<xs:documentation>The attribute maxStops describes the number of stopovers in the passlist plus 2 (for departure and arrival stops). If maxStops equals to zero, only 2 stops - departure and arrival are displayed in the passList. If the attribute is absent, all available stops are displayed. </xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Today">
+		<xs:annotation>
+			<xs:documentation>Stationboardrequest for the current day.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="Period">
+		<xs:annotation>
+			<xs:documentation>A period is requested. If DateBegin and DateEnd are ommitted, a table for the whole timetableperiod is generated. If DateBegin is ommitted, the current date is taken as the begin of the period. If DateEnd is ommitted, the end of the timetable period is  taken as the end of the requested period</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="DateBegin" minOccurs="0">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element ref="Date"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="DateEnd" minOccurs="0">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element ref="Date"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="TableStation" type="StationType">
+		<xs:annotation>
+			<xs:documentation>Thie requested Station. This element must be filled with the results from a previously performed location validation request. Only stations are allowed as input here</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="DirectionFilter" type="StationType">
+		<xs:annotation>
+			<xs:documentation>The directionfilter restricts the table to trains that pass the given station.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="TrainFilter">
+		<xs:annotation>
+			<xs:documentation>The trainFilter takes a category (IC, RE, ...) or a complete train name. The output is restricted to trains, that match the given category / name. </xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="ProductFilter">
+		<xs:annotation>
+			<xs:documentation>Filter for product classes. The output is restricted to product classes that are enabled here. If no ProductFilter is given, trains of all productclasses will be returned. The productfilter is a string of 0 and 1, where each numer stands for a product class, based on the position of the number in the  string. The leftmost number represents productclass 0, the next productclass 1 etc. Example: 111000 enables the productclasses 0,1, 2</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="STBRes">
+		<xs:annotation>
+			<xs:documentation>Result of a stationboard request (STBReq)</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:choice>
+				<xs:element ref="Err"/>
+				<xs:sequence>
+					<xs:element ref="JourneyList" minOccurs="0"/>
+					<xs:element ref="IList" minOccurs="0"/>
+				</xs:sequence>
+			</xs:choice>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="JourneyList">
+		<xs:complexType>
+			<xs:sequence maxOccurs="unbounded">
+				<xs:element ref="STBJourney"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="STBJourney">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="MainStop"/>
+				<xs:element ref="JourneyAttributeList"/>
+				<xs:element name="ServiceDaysList" minOccurs="0">
+					<xs:complexType>
+						<xs:sequence maxOccurs="unbounded">
+							<xs:element ref="ServiceDays"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element ref="IList" minOccurs="0"/>
+				<xs:element ref="JProg" minOccurs="0"/>
+			</xs:sequence>
+			<xs:attribute name="journeyId" type="xs:string" use="optional">
+				<xs:annotation>
+					<xs:documentation>This unique ID identifies the journey (if realtime is available).</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="trainId" type="xs:string" use="optional">
+				<xs:annotation>
+					<xs:documentation>This unique ID identifies the journey in the plan-data-set.</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="MainStop">
+		<xs:annotation>
+			<xs:documentation>Tablestation. The BasicStop contained here, will only contain Stations, no other type of locations</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="BasicStop"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="PricingResult">
+		<xs:annotation>
+			<xs:documentation>If pricing information i available, they are stored in the PricingResult</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="PricingList" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="PricingList">
+		<xs:annotation>
+			<xs:documentation>A PricingResult Can have different PricingLists, each of which has an attribute Id. This Id is set to the id of the connection, the pricingList belongs to. A PricingList will either contain elements of type PricingSet or elements of type Pricing.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:choice>
+				<xs:element name="ParameterList" minOccurs="0"/>
+				<xs:element ref="PricingSet" minOccurs="0" maxOccurs="unbounded"/>
+				<xs:element ref="Pricing" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:choice>
+			<xs:attributeGroup ref="attlist.PricingList"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.PricingList">
+		<xs:attribute name="id" type="xs:IDREF" use="required"/>
+	</xs:attributeGroup>
+	<xs:element name="PricingSet">
+		<xs:annotation>
+			<xs:documentation>A PricingSet is used to group Pricing elements, that all share the same generic parameters. Therefore the PricingSet contains a ParameterList. The parameters supplied in ths list have to be applied to all Pricing elements in the surrent PricingSet.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="ParameterList" minOccurs="0"/>
+				<xs:element ref="Pricing" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Pricing">
+		<xs:annotation>
+			<xs:documentation>A Pricing contains all  elements to describe one pricing information. The number of different pricing elements for one connection depends on the data delivered from the pricing subsystem.  </xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Ticket" minOccurs="0" maxOccurs="unbounded"/>
+				<xs:element ref="ParameterList" minOccurs="0"/>
+			</xs:sequence>
+			<xs:attributeGroup ref="attlist.Pricing"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.Pricing">
+		<xs:attribute name="type" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="OUTWARD"/>
+					<xs:enumeration value="RETURN"/>
+					<xs:enumeration value="BOTH"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="ParameterList">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="NamedValue" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Ticket">
+		<xs:annotation>
+			<xs:documentation>A Ticket contains the name of the Ticket, the price, the number of travellers and a generic ParameterList</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Tariff"/>
+				<xs:element ref="Traveller"/>
+				<xs:sequence minOccurs="0">
+					<xs:element ref="FromText"/>
+					<xs:element ref="ToText"/>
+				</xs:sequence>
+				<xs:element ref="Price" maxOccurs="unbounded"/>
+				<xs:element ref="ParameterList" minOccurs="0"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Tariff">
+		<xs:annotation>
+			<xs:documentation>A Tariff contains the textual description of the tariff and a code for this tariff.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Text" maxOccurs="unbounded"/>
+			</xs:sequence>
+			<xs:attributeGroup ref="attlist.Tariff"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.Tariff">
+		<xs:attribute name="code"/>
+	</xs:attributeGroup>
+	<xs:element name="Traveller">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="TravellerCategory" maxOccurs="unbounded"/>
+				<xs:element ref="Text" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="TravellerCategory">
+		<xs:complexType>
+			<xs:attributeGroup ref="attlist.TravellerCategory"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.TravellerCategory">
+		<xs:attribute name="category" use="required"/>
+		<xs:attribute name="amount" use="required"/>
+	</xs:attributeGroup>
+	<xs:element name="FromText">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Text" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="ToText">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Text" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Price">
+		<xs:complexType>
+			<xs:attributeGroup ref="attlist.Price"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.Price">
+		<xs:attribute name="price" type="xs:int" use="required"/>
+		<xs:attribute name="currency" fixed="EUR"/>
+	</xs:attributeGroup>
+	<xs:element name="ConnectionList">
+		<xs:annotation>
+			<xs:documentation>The ConnectionList element is the container for all connections calculated by the Hafas server.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Err" minOccurs="0"/>
+				<xs:element ref="Connection" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+			<xs:attributeGroup ref="attlist.ConnectionList"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.ConnectionList">
+		<xs:attribute name="type" use="optional">
+			<xs:annotation>
+				<xs:documentation>OEV public transport, IV individual transport</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="OEV"/>
+					<xs:enumeration value="IV"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="ConResCtxt">
+		<xs:annotation>
+			<xs:documentation>The element ConResCtxt is part of a ConRes. For a subsequent ConScrReq, the ConResCtxt must be supplied as a part of the request..</xs:documentation>
+		</xs:annotation>
+		<xs:complexType mixed="true">
+			<xs:attributeGroup ref="attlist.ConResCtxt"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.ConResCtxt">
+		<xs:annotation>
+			<xs:documentation>The attribute b specifies, whether backward scrolling is possible (1=yes, 0=no), the attribute f specifies whether forward scrolling is possible (1=yes, 0=no)</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="b" use="optional" default="1">
+			<xs:annotation>
+				<xs:documentation>The element ConResCtxt contains informations about the session used. The ConResCtxt must be inserted in sbsequent connection scroll requests. Based on this information, the data needed to perform such a request will be read from the corresponding spoolfile.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="0"/>
+					<xs:enumeration value="1"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="f" use="optional" default="1">
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="0"/>
+					<xs:enumeration value="1"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="Date" type="xs:string">
+		<xs:annotation>
+			<xs:documentation>The element date contains the base date for a connection. The base date is the date at which the conection starts. All time elements refer to the base date. </xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:complexType name="TimeType">
+		<xs:sequence>
+			<xs:element ref="Time" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="Time">
+		<xs:annotation>
+			<xs:documentation>The format of the Time element is [xxd]hh:mm:ss. xx represents a day offset. All offsets are relative to the base date of the connection. For example a time 01d12:30:00 means 12:30 at the first day following the day specified as the base date in the Date element in the Overview section of the connection.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType mixed="true"/>
+	</xs:element>
+	<xs:attributeGroup name="attlist.Time">
+		<xs:attribute name="delay" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>This attribute is not used at the moment.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="Coord" type="LocationType">
+		<xs:annotation>
+			<xs:documentation>The Coord element represents a coordinate. In connection requests, the Coord element can be used to describe the start and the destination of a request. Coord elements can not be obtained via a LocValReq, instead the user is responsible to create valid Coord elements. </xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:complexType name="LocationType">
+		<xs:attributeGroup ref="attlist.Location"/>
+	</xs:complexType>
+	<xs:attributeGroup name="attlist.Location">
+		<xs:attribute name="name" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>The attribute name contains the output name of a location.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="x" type="xs:int" use="optional">
+			<xs:annotation>
+				<xs:documentation>The x-coordinate of the location.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="y" type="xs:int" use="optional">
+			<xs:annotation>
+				<xs:documentation>The y-coordinate of the location.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="z" type="xs:int" use="optional">
+			<xs:annotation>
+				<xs:documentation>The z-coordinate is currently not used.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="type" use="optional" default="WGS84">
+			<xs:simpleType>
+				<xs:annotation>
+					<xs:documentation>The attribute type specifies the format of the coordinate. WGS84 is the default and the preferred format. The value of attribute is equal to WGS84 * 1000000</xs:documentation>
+				</xs:annotation>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="HAFAS_GEO"/>
+					<xs:enumeration value="HAFAS_HANNOVER"/>
+					<xs:enumeration value="WGS84"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:complexType name="StationType">
+		<xs:complexContent>
+			<xs:extension base="LocationType">
+				<xs:attributeGroup ref="attlist.StationType"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="Station" type="StationType">
+		<xs:annotation>
+			<xs:documentation>A station</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:attributeGroup name="attlist.StationType">
+		<xs:attribute name="externalId" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>The externalId contains an identifier for the current station/Address/POI. This identifier can only be used for subsequent XML-Requests. </xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="externalStationNr" type="xs:int" use="optional">
+			<xs:annotation>
+				<xs:documentation>The attribute externalStationNr contains the EVA-ID for the current station. This attribute will not be present for Adresses, POIs and stations found in the delfi context. If nessessary, this id can be used in subsequent HTML-based requests.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="Address" type="StationType">
+		<xs:annotation>
+			<xs:documentation>An address.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="Poi" type="StationType">
+		<xs:annotation>
+			<xs:documentation>A Point of Interest.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="Text">
+		<xs:complexType mixed="true">
+			<xs:attributeGroup ref="attlist.Text"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.Text">
+		<xs:attribute name="lang">
+			<xs:annotation>
+				<xs:documentation>The attribute lang specifies the language of the current text element. Possible values are data dependant(see ReqC.lang)</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="DE"/>
+					<xs:enumeration value="DK"/>
+					<xs:enumeration value="EN"/>
+					<xs:enumeration value="FR"/>
+					<xs:enumeration value="PL"/>
+					<xs:enumeration value="IT"/>
+					<xs:enumeration value="MACRO"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="NamedValue">
+		<xs:annotation>
+			<xs:documentation>A named value is used to specify generic extensions. The attribute name specifies the name of the element, the attribute valuetakes the corresponding value.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:attributeGroup ref="attlist.NamedValue"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.NamedValue">
+		<xs:attribute name="name" type="xs:string" use="required"/>
+		<xs:attribute name="value" type="xs:string" use="required"/>
+	</xs:attributeGroup>
+	<xs:element name="ServiceDays">
+		<xs:annotation>
+			<xs:documentation>The element ServiceDays specifies the days, the current connection is served. There are two representations of the servicedays. The ServiceBits take a bitfield of the servicedays. In addition there is a textual description of the servicedays, separated into regular servicedays (Mo-Fr) and irregular servicedays (not 24., 25, 26. Dez...) The textual description is given in a macro language, where all language specific parts are substituted with macros of the form $(vt&lt;xy&gt;) </xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="ServiceBits" minOccurs="0"/>
+				<xs:element ref="RegularServiceText" minOccurs="0"/>
+				<xs:element ref="IrregularServiceText" minOccurs="0"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="ServiceBits" type="xs:string"/>
+	<xs:element name="RegularServiceText">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Text" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="IrregularServiceText">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Text" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Connection">
+		<xs:annotation>
+			<xs:documentation>The element Connection is a container for all the data belonging to one connection.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="RtStateList" minOccurs="0"/>
+				<xs:element ref="Overview"/>
+				<xs:element ref="ConSectionList" minOccurs="0"/>
+				<xs:element ref="IList" minOccurs="0"/>
+				<xs:element ref="CommentList" minOccurs="0"/>
+				<xs:element ref="AltConList" minOccurs="0"/>
+			</xs:sequence>
+			<xs:attributeGroup ref="attlist.Connection"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.Connection">
+		<xs:attribute name="id" type="xs:ID" use="required">
+			<xs:annotation>
+				<xs:documentation>Every connection is given an identifier. This identifier is guaranteed to be unique within the complete session which means, that the connections returned for an initial ConReq and for subsequent ConScrReq requests all get a different identifier.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="Duration" type="TimeType">
+		<xs:annotation>
+			<xs:documentation>The element Duration contains the duration of the current connection in the format hh:mm</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="Transfers" type="xs:string">
+		<xs:annotation>
+			<xs:documentation>The element Transfers contains the number of transfers in the current connection. Walks will not be counted: Train-&gt;Walk-&gt;Train counts a one transfer. As the maximum number of conCsection within a connection is 12, the maximum number of transfers is 11. the minimum is of course 0 for direct connections</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="Overview">
+		<xs:annotation>
+			<xs:documentation>The element overview takes all relevant elements to display an overview of the connection. This includes Date (the base date), Departure, Arrival, Transfers, Duration, ServiceDays and ContextURL. </xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Date"/>
+				<xs:element ref="Departure"/>
+				<xs:element ref="Arrival"/>
+				<xs:element ref="Transfers"/>
+				<xs:element ref="Duration"/>
+				<xs:element ref="ServiceDays"/>
+				<xs:element ref="Products"/>
+				<xs:element ref="ContextURL" minOccurs="0"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Products">
+		<xs:annotation>
+			<xs:documentation>The Products section shows the product categories, used in the current connection.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Product" maxOccurs="12"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Product">
+		<xs:complexType>
+			<xs:attributeGroup ref="attlist.Product"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.Product">
+		<xs:attribute name="cat" type="xs:string" use="optional"/>
+	</xs:attributeGroup>
+	<xs:element name="ContextURL">
+		<xs:annotation>
+			<xs:documentation>The element ContextURL takes an URL that generates a more detailed view of the connection specified in the overview. If you need this element please contact  us. By default, this element will not be available.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:attributeGroup ref="attlist.ContextURL"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.ContextURL">
+		<xs:attribute name="url" type="xs:anyURI" use="required"/>
+	</xs:attributeGroup>
+	<xs:element name="ConSectionList">
+		<xs:annotation>
+			<xs:documentation>The ConSectionList is a container for the consections that form the connection. A connecton can have a maximum of 12 ConSections. Sections of type Walk and Transfer are counted as a ConSection.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="ConSection" maxOccurs="12"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="ConSection">
+		<xs:annotation>
+			<xs:documentation>A ConSection consists of a Departure an Arrival and an element Journey, Walk, Transfer or GisRoute, giving more informations about the current ConSection.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Departure"/>
+				<xs:choice>
+					<xs:element ref="Journey"/>
+					<xs:element ref="Walk"/>
+					<xs:element ref="Transfer"/>
+					<xs:element ref="GisRoute"/>
+				</xs:choice>
+				<xs:element ref="Arrival"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Departure">
+		<xs:annotation>
+			<xs:documentation>The departure location of a ConSection</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="BasicStop"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Arrival">
+		<xs:annotation>
+			<xs:documentation>The arrival location of a ConSection</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="BasicStop"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="BasicStop">
+		<xs:annotation>
+			<xs:documentation>The element BasicStop represents a Location, as a part of the current ConSection. It contains a Location (Station, Address, Poi) together with the arrival and departure times at this location, as well as some other information like platforms.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:choice>
+					<xs:element ref="Address"/>
+					<xs:element ref="Poi"/>
+					<xs:element ref="Station"/>
+				</xs:choice>
+				<xs:element ref="Arr" minOccurs="0"/>
+				<xs:element ref="Dep" minOccurs="0"/>
+				<xs:element name="StopPrognosis" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>Prognosis data for a stop</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element ref="Arr" minOccurs="0"/>
+							<xs:element ref="Dep" minOccurs="0"/>
+							<xs:element name="Status" minOccurs="0">
+								<xs:annotation>
+									<xs:documentation>Realtime status; Possible values are: SCHEDULED: the stop will be used as planned (i. e. but it's possible that a delay exists); NEW: the stop has been added; PARTIAL_FAILURE: Stop has been completely removed from the ride - i.e. no boarding and no exit is allowed; FAILURE_AT_ARRIVAL: No exit is allowed; FAILURE_AT_DEPARTURE: No boarding is allowed</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element name="FreeTextL" minOccurs="0">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="Freetext">
+											<xs:annotation>
+												<xs:documentation>A freetext message is used to display reasons for a delay. If a code is given, the text belonging to the code has to be displayed. If the code is unknown, no text shall be displayed. Only if no code is given, the Text element has to be used.</xs:documentation>
+											</xs:annotation>
+											<xs:complexType>
+												<xs:choice>
+													<xs:element ref="Text"/>
+													<xs:element name="Code"/>
+												</xs:choice>
+												<xs:attribute name="validFor">
+													<xs:annotation>
+														<xs:documentation>ARR: only to be displayed, if the arrival delay is displayed. DEP: only to be displayed, if the departure delay is displayed. BOTH The Freetext is valid for Aiirval delays and departure delays</xs:documentation>
+													</xs:annotation>
+												</xs:attribute>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+			<xs:attributeGroup ref="attlist.BasicStop"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.BasicStop">
+		<xs:attribute name="type" default="NORMAL">
+			<xs:annotation>
+				<xs:documentation>The attribute type classifies the BasicStop either to be a normal or a virtual stop. Virtual stops can be used to display tariff borders or national boundaries, they normally do not represent physical stops, where people can leave and enter a train.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="NORMAL"/>
+					<xs:enumeration value="VIRTUAL"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="index" type="xs:int" use="optional">
+			<xs:annotation>
+				<xs:documentation>The attribute index specifies an index into the passlist of the current train.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="Platform">
+		<xs:annotation>
+			<xs:documentation>The element Platform supplies information about the Departure- and Arrivalplatform at a Station. The maximum length of this string is 8 characters.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Text" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:complexType name="ArrDepType">
+		<xs:complexContent>
+			<xs:extension base="TimeType">
+				<xs:sequence>
+					<xs:element ref="Platform" minOccurs="0"/>
+				</xs:sequence>
+				<xs:attributeGroup ref="attlist.ArrDep"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:attributeGroup name="attlist.ArrDep">
+		<xs:attribute name="getOut" default="YES">
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="YES"/>
+					<xs:enumeration value="NO"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="getIn" default="YES">
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="YES"/>
+					<xs:enumeration value="NO"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="Dep" type="ArrDepType">
+		<xs:annotation>
+			<xs:documentation>Information for the departure of a train at the current BasicStop. This includes the departure time, the departure platform and the information whether it is allowed to enter the train at the current stop or not.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="Arr" type="ArrDepType">
+		<xs:annotation>
+			<xs:documentation>Information for the arrival of a train at a current stop. This includes the arrival time, the arrival platform and the information, whether it is allowed to get out of the train at the current stop.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="Journey">
+		<xs:annotation>
+			<xs:documentation>The element Journey contains the List with the JourneyAttributes valid for the current ConSection, as well as (optionally) a PassList containing extended Information about the passed stations.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="JHandle"/>
+				<xs:element ref="JourneyAttributeList"/>
+				<xs:element ref="PassList"/>
+				<xs:element ref="JProg"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Walk">
+		<xs:annotation>
+			<xs:documentation>A Walk is an unrouted transition with a duration of max. 15 minutes.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Duration"/>
+                   		<xs:element ref="Distance" minOccurs="0"/>
+				<xs:element ref="JourneyAttributeList" minOccurs="0"/>
+			</xs:sequence>
+                        <xs:attribute name="length" type="xs:int" use="optional">
+		                <xs:annotation>
+			                <xs:documentation>Length of the walk in meters. (linear distance)</xs:documentation>
+        			</xs:annotation>
+	        	</xs:attribute>
+                </xs:complexType>
+	</xs:element>
+      	<xs:element name="Distance">
+		<xs:annotation>
+			<xs:documentation>Distance in meters.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="Transfer">
+		<xs:annotation>
+			<xs:documentation>A Transfer is an unrouted transition with a duration of more than 15 minutes.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Duration"/>
+				<xs:element ref="JourneyAttributeList" minOccurs="0"/>
+			</xs:sequence>
+                        <xs:attribute name="length" type="xs:int" use="optional">
+		                <xs:annotation>
+			                <xs:documentation>Length of the walk in meters. (linear distance)</xs:documentation>
+        			</xs:annotation>
+	        	</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="GisRoute">
+		<xs:annotation>
+			<xs:documentation>A GisRoute is an externally routed consection. </xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Duration"/>
+				<xs:element ref="Distance" minOccurs="0"/>
+				<xs:element ref="JourneyAttributeList" minOccurs="0"/>
+			</xs:sequence>
+			<xs:attributeGroup ref="attlist.GisRoute"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.GisRoute">
+		<xs:attribute name="type" use="required">
+			<xs:annotation>
+				<xs:documentation>The attribute type specifies the type of the individual traffic used. Valid values are: FOOT, BIKE, CAR, TAXI.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="PassList">
+		<xs:annotation>
+			<xs:documentation>The element PassList contains informations about the passed stops of the current ConSection. It contains a sequence of BasicStop elements</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="BasicStop" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="CommentList">
+		<xs:annotation>
+			<xs:documentation>The CommentList may contain additional informations for the current connection/consection. This feature is not used in the current version of the interface. </xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Comment" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Comment">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Text" maxOccurs="unbounded"/>
+			</xs:sequence>
+			<xs:attributeGroup ref="attlist.Comment"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="JHandle">
+		<xs:annotation>
+			<xs:documentation>A journey handle can be taken subsequent journey requests. Can be taken as is, and placed in the corresponding JourneyReq</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:attribute name="tNr"/>
+			<xs:attribute name="puic"/>
+			<xs:attribute name="cycle"/>
+		</xs:complexType>
+	</xs:element>
+        <xs:element name="AltConList">
+		<xs:annotation>
+			<xs:documentation>The AltConList may contain references to alternative connections (realtime).</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="id" type="xs:IDREF" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.Comment">
+		<xs:attribute name="id" type="xs:ID" use="required"/>
+	</xs:attributeGroup>
+	<xs:element name="RtStateList">
+		<xs:annotation>
+			<xs:documentation>Contains a list of information regarding the realtime status of the connection</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="RtState" minOccurs="0" maxOccurs="6"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="RtState">
+		<xs:annotation>
+			<xs:documentation/>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:attribute name="value" type="xs:string" use="optional">
+				<xs:annotation>
+					<xs:documentation>Values can be: HAS_DELAYINFO: connection is ridable, delayinfos are available; HAS_ALTERNATIVE: for this connection is an alternative connection available; IS_ALTERNATIVE: this connection is an alternative connection; WARNING_TRANSFER: transfer not possible, because train is to late; WARNING_CONNECTION_NOT_RIDABLE: connection not ridable; </xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="JProg">
+		<xs:annotation>
+			<xs:documentation>Train based realtime information</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="JStatus">
+					<xs:annotation>
+						<xs:documentation>Possible values are: FAILURE - train failure via real time.  NEW or  ADDITIONAL - identifies addtional train. REPLACEMENT - identifies alternative train.  REDIRECTION - one or several additional stops and/or contrary some stops can not be served. PARTIAL_FAILURE - a part of a track can not be served.   PARTIAL_ACTIVATION , REDIRECTION_FAILURE,  REPLACEMENT_REDIRECTION are reserverd for future use. SCHEDULED - train is in time</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="AnnoText">
+		<xs:annotation>
+			<xs:documentation>Text message </xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="Attribute">
+		<xs:annotation>
+			<xs:documentation>Attributes describe the characteristics of a ConSection, such as the name of the means of transport, the category of the means of transport, general attributes like Bord Restaurant, Reservation required and other characteristics. For a detailed description of the different attributes see the attribute type. Some types of attributes can have different attribute variants (NORMAL, SHORT and LONG), containing different Levels of information.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="AttributeVariant" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+			<xs:attributeGroup ref="attlist.Attribute"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.Attribute">
+		<xs:attribute name="priority" use="optional">
+			<xs:annotation>
+				<xs:documentation>Attributes of type NORMAL do have a priority, describing the importance of the current attribute. Therange for the priority is 0 - 999. lower values have a higher priority, so 0 is the most important priority. </xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:int">
+					<xs:minInclusive value="0"/>
+					<xs:maxInclusive value="999"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="type" use="optional" default="NORMAL">
+			<xs:annotation>
+				<xs:documentation>There is a variety of different attributetypes, specifying different characteristics of the current consection. Attributes of type NORMAL specify classical train attributes like BordRestaurant, Carriage of Bicycles etc. Attributes of type DIRECTION show the direction of a train, this can either be the name of the destination station or the external Id of the station, depending on the underlying data. Not all means of transportation do have a DIRECTION entry. CATEGORY specifies the the category of the train. Attributevariants of type SHORT show the internally used description of the category and has a maximum length of eight characters. Attributevariants of type NORMAL show the output category of the train and also has a maximum length of eight characters, this should be used for output. Attributevariants of type LONG take a more detailed description (like Intercity Express). Dependant on the data, the Attributevariants of type NORMAL and LONG might not be available, in which case the output of the category should be suppressed. Attributes of type INTERNALCATEGORY... Attributes of type OPERATOR contain a description of the operator of the train. Attributes of type NAME take the name of the means of transport. Please note that in some rare cases the means of transort does not have a name (for example any english trains do not have names in the data), in which case the attribute will not be printed out. Attributes ofvtype NUMBER take the external train number. </xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="NORMAL"/>
+					<xs:enumeration value="DIRECTION"/>
+					<xs:enumeration value="CATEGORY"/>
+					<xs:enumeration value="INTERNALCATEGORY"/>
+					<xs:enumeration value="OPERATOR"/>
+					<xs:enumeration value="NAME"/>
+					<xs:enumeration value="NUMBER"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="code">
+			<xs:annotation>
+				<xs:documentation>The attribute code will be available for attributes of type NORMAL and CATEGORY. For Attributes of type NORMAL it represents the internal two-byte code of the ATTRIBUTE.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:maxLength value="2"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="AttributeVariant">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Text" maxOccurs="3"/>
+			</xs:sequence>
+			<xs:attributeGroup ref="attlist.AttributeVariant"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.AttributeVariant">
+		<xs:attribute name="type" use="optional" default="NORMAL">
+			<xs:simpleType>
+				<xs:restriction base="xs:token">
+					<xs:enumeration value="SHORT"/>
+					<xs:enumeration value="NORMAL"/>
+					<xs:enumeration value="LONG"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:element name="JourneyAttributeList">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="JourneyAttribute" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="JourneyAttribute">
+		<xs:annotation>
+			<xs:documentation>A JourneyAttribute contains an element Attribute as well as validity informations for this attribute. An attribute must not be valid for the whole ConSection and it must not be valid at all the ServiceDays of the connection. So the JourneyAttribute can take two attributes from and to, specifying an index into the PassList. Every BasicStop within a PassList has an attribute index. The Attribute is valid from the BasicStop with the index matching the index given in the attribute from, to the BasicStop with the index matching the index given in the attribute to. The element SeviceDays specifies the days were the Attribute is valid. if the element ServiceDays is not given, the attribute is valid at all the servicedays of the connection. The restriction of the ServiceDays of an Attribute is not used at the moment, but may be activated in later versions of this interface.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Attribute"/>
+				<xs:element ref="ServiceDays" minOccurs="0"/>
+			</xs:sequence>
+			<xs:attributeGroup ref="attlist.JourneyAttribute"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.JourneyAttribute">
+		<xs:attribute name="from" type="xs:int" use="optional"/>
+		<xs:attribute name="to" type="xs:int" use="optional"/>
+	</xs:attributeGroup>
+	<xs:element name="IList">
+		<xs:annotation>
+			<xs:documentation>The InfoList may contain announcements (HIM messages) for the current connection.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="I" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="I">
+		<xs:annotation>
+			<xs:documentation>One specific Information (HIM message) for the current connection. It can contain a header of the message, the text body and a uniform resource identifier (URI) like a HTML page with detailed information.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:attributeGroup ref="attlist.I"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="attlist.I">
+		<xs:attribute name="header" type="xs:string">
+			<xs:annotation>
+				<xs:documentation>Header text for HIM messages.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="lead" type="xs:string">
+			<xs:annotation>
+				<xs:documentation>Leading text for a HIM message.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="text" type="xs:string">
+			<xs:annotation>
+				<xs:documentation>The HIM mesage text (depending on requested language).</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="uriCustom" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>URI to additional HIM information.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="type" type="xs:integer" use="optional" default="0">
+			<xs:annotation>
+				<xs:documentation>The HIM types: Obselete since HIM 2.0; (0 - normal message, 1 - common message, 2 - cancelation of train, 3 - news ticker, 4 - teletext message, 6 - cancelation of stop)
+                </xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="symbol" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>The icon for the HIM message.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="section" type="xs:integer" use="optional">
+			<xs:annotation>
+				<xs:documentation>Link to the involved section of the HIM message.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="altRouteStart" type="xs:integer" use="optional">
+			<xs:annotation>
+				<xs:documentation>The passlist index for alternative station name.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="altRouteEnd" type="xs:integer" use="optional">
+			<xs:annotation>
+				<xs:documentation>The passlist index for alternative station name.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="dep" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>The station name for HIM message start.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="arr" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>The station name for HIM message end.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="channel" type="xs:int" use="optional">
+			<xs:annotation>
+				<xs:documentation>For future use.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+			<xs:attribute name="locType" type="xs:int" use="optional">
+			<xs:annotation>
+				<xs:documentation>For future use.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:attributeGroup>
+</xs:schema>
